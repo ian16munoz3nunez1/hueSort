@@ -1,4 +1,4 @@
-#!python3
+#!/bin/python3
 
 import socket
 import numpy as np
@@ -8,7 +8,7 @@ from colorama.ansi import Fore
 
 init(autoreset=True)
 
-host = '192.168.1.32'
+host = ''
 port = 9999
 addr = (host, port)
 
@@ -20,13 +20,16 @@ print(Fore.GREEN + f"[+] Conexion establecida con {addr[0]}")
 
 while True:
     try:
-        v = np.random.randint(low=-255, high=255, size=3)
+        cmd = input("Velocities: ")
+        if cmd.lower() == 'q':
+            break
+        else:
+            v = list(map(int, cmd.rstrip().split()))
+        # v = np.random.randint(low=-255, high=255, size=3)
         v = ''.join([str(x).zfill(4) for x in v])
 
         sock.send(f"{v}\n".encode())
         print(f"Velocidades enviadas: {v}")
-
-        sleep(2)
 
     except KeyboardInterrupt:
         sock.send("q\n".encode())

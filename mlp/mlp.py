@@ -1,3 +1,5 @@
+#!/bin/python3
+
 import numpy as np
 from colorama import init
 from colorama.ansi import Fore

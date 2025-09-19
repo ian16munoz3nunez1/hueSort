@@ -4,15 +4,15 @@
 #include <WiFiServer.h>
 
 // WiFi credentials
-const char* ssid = "esp32net";
-const char* password = "ciNNam0n2412";
+const char* ssid = "";
+const char* password = "";
 
-// TCP server on port 8080
+// TCP server on the specified port
 WiFiServer server(10001);
 
 // IP address configuration
-IPAddress ip(192,168,4,101);
-IPAddress gateway(192,168,4,1);
+IPAddress ip(192,168,1,101);
+IPAddress gateway(192,168,1,1);
 IPAddress subnet(255,255,255,0);
 
 // Camera configuration for AI-Thinker ESP32-CAM
@@ -59,7 +59,7 @@ void setup() {
   config.pin_reset = RESET_GPIO_NUM;
   config.xclk_freq_hz = 20000000;
   config.pixel_format = PIXFORMAT_JPEG;
-  
+
   // Lower resolution for better streaming performance
   config.frame_size = FRAMESIZE_VGA;  // 640x480
   config.jpeg_quality = 12;
@@ -84,17 +84,17 @@ void setup() {
 
 void loop() {
   WiFiClient client = server.available();
-  
+
   if (client) {
     while (client.connected()) {
       // Take a picture
-      camera_fb_t * fb = esp_camera_fb_get();
+      camera_fb_t *fb = esp_camera_fb_get();
       if (!fb) { break; }
 
       // Send the image size
       uint32_t frame_size = fb->len;
       client.write((uint8_t*)&frame_size, 4);
-      
+
       // Send the image data
       size_t sent = 0;
       while (sent < fb->len) {
@@ -103,12 +103,12 @@ void loop() {
         if (bytes_written == 0) { break; }
         sent += bytes_written;
       }
-      
+
       // Free space to reuse memory address
       esp_camera_fb_return(fb);
       delay(100);
     }
-    
+
     client.stop();
   }
 }

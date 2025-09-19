@@ -1,10 +1,12 @@
+#!/bin/python3
+
 import socket
 import struct
 import cv2 as cv
 import numpy as np
 
 # Server details
-addr = ("192.168.4.101", 10001)
+addr = ('192.168.4.101', 10001)
 
 # Connect to the ESP32-CAM server
 sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
