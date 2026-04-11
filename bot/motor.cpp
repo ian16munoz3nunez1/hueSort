@@ -13,23 +13,20 @@ void Motor::setVelocity(int velocity)
 {
     if(velocity == 0)
     {
-        Serial.println("Setting velocity to zero");
         analogWrite(forward_pin, 0);
         analogWrite(backward_pin, 0);
     }
 
     if(velocity > 0)
     {
-        Serial.println("Positive velocity");
-        int v = map(velocity, 0, 100, 140, 255);
+        int v = map(velocity, 0, 100, 0, 255);
         analogWrite(backward_pin, 0);
         analogWrite(forward_pin, v);
     }
 
     if(velocity < 0)
     {
-        Serial.println("Negative velocity");
-        int v = map(abs(velocity), 0, 100, 140, 255);
+        int v = map(abs(velocity), 0, 100, 0, 255);
         analogWrite(forward_pin, 0);
         analogWrite(backward_pin, v);
     }
@@ -39,6 +36,4 @@ void Motor::stop()
 {
     analogWrite(forward_pin, 0);
     analogWrite(backward_pin, 0);
-    Serial.println("Motor stopped");
 }
-

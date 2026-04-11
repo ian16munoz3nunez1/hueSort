@@ -26,4 +26,3 @@ void Led::blink(int times, int time)
         delay(time);
     }
 }
-
