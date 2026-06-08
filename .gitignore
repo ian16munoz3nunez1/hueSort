@@ -1,3 +1,7 @@
 bot/__pycache__/
+doc/*.aux
+doc/*.log
+doc/*.out
+doc/*.pdf
 puenteH/fp-info-cache
 puenteH/puenteH.kicad_prl
