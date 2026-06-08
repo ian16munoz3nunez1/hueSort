@@ -7,15 +7,15 @@ NetworkServer server(9999);
 void bot(NetworkClient);
 
 Led led0(2);
-Motor motor1(19, 33);
-Motor motor2(5, 26);
-Motor motor3(16, 14);
+Motor motor1(32, 33);
+Motor motor2(25, 26);
+Motor motor3(14, 12);
 
-const char* ssid = "";
-const char* password = "";
+const char* ssid = "rpinet";
+const char* password = "rp1_N37!";
 
-IPAddress ip(192,168,1,32);
-IPAddress gateway(192,168,1,1);
+IPAddress ip(4,4,0,32);
+IPAddress gateway(4,4,0,1);
 IPAddress subnet(255,255,255,0);
 
 void setup()
