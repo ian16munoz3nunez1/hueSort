@@ -1,20 +1,48 @@
 import socket
 import errno
 import numpy as np
-import matplotlib.pyplot as plt
-from time import sleep
-
-from dibujarMovil import dibujarMovil
+import os
 
 pi = np.pi
 L = 0.08
-p_b = [0.05, 0.0, 0.015]
+p_b = [0.07, 0.0, 0.085]
 a = [0, 0.05, 0.05]
 d = [0, 0, 0]
 x_t, y_t, z_t = p_b
 
 
 class Robot:
+    def __init__(self):
+        if not os.path.isdir("./data/"):
+            os.mkdir("./data/")
+
+        q_file = "./data/q.csv"
+        qd_file = "./data/q_dot.csv"
+        xd_file = "./data/x_d.csv"
+        e_file = "./data/e.csv"
+        v_file = "./data/v.csv"
+        x_file = "./data/x.csv"
+
+        self.q_plot = open(q_file, 'a')
+        self.qd_plot = open(qd_file, 'a')
+        self.xd_plot = open(xd_file, 'a')
+        self.e_plot = open(e_file, 'a')
+        self.v_plot = open(v_file, 'a')
+        self.x_plot = open(x_file, 'a')
+
+        if os.path.getsize(q_file) == 0:
+            self.q_plot.write("t,x_b,y_b,theta_b,theta_2,theta_3\n")
+        if os.path.getsize(qd_file) == 0:
+            self.qd_plot.write("t,x_b,y_b,theta_b,theta_2,theta_3\n")
+        if os.path.getsize(xd_file) == 0:
+            self.xd_plot.write("t,x_b,y_b,theta_b,x,y,z\n")
+        if os.path.getsize(e_file) == 0:
+            self.e_plot.write("t,x_b,y_b,theta_b,x,y,z\n")
+        if os.path.getsize(v_file) == 0:
+            self.v_plot.write("t,v_1,v_2,v_3\n")
+        if os.path.getsize(x_file) == 0:
+            self.x_plot.write("t,x,y,z\n")
+
     def connect(self, host: str, port: int):
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
@@ -30,6 +58,59 @@ class Robot:
             else:
                 raise ValueError(f"Error connecting - errno: {status}")
         print("Successfully connected")
+
+    def disconnect(self):
+        self.sock.close()
+        print("Robot disconnected")
+
+        self.q_plot.close()
+        print("File q.csv closed")
+        self.qd_plot.close()
+        print("File q_dot.csv closed")
+        self.xd_plot.close()
+        print("File x_d.csv closed")
+        self.e_plot.close()
+        print("File e.csv closed")
+        self.v_plot.close()
+        print("File v.csv closed")
+        self.x_plot.close()
+        print("File x.csv closed")
+
+    def writeHome(self):
+        q = np.array([0, 0, 0, pi/4, -pi/4])
+
+        with open("./data/pose.dat", 'w') as pose:
+            for i in range(5):
+                pose.write(f"{q[i]}\n")
+        pose.close()
+
+    def writePose(self, q):
+        with open("./data/pose.dat", 'w') as pose:
+            for i in range(5):
+                pose.write(f"{q[i]}\n")
+        pose.close()
+
+    def readPose(self):
+        try:
+            q = np.ndarray((5,), dtype=np.float64)
+            with open("./data/pose.dat", 'r') as pose:
+                for i in range(5):
+                    q[i] = np.float64(pose.readline())
+            pose.close()
+
+        except Exception as e:
+            print(f"Unable to read pose from file: {e}")
+            q = np.array([0, 0, 0, pi/4, -pi/4])
+
+        print("==== Pose ==== ")
+        print(f"x: {q[0]}")
+        print(f"y: {q[1]}")
+        print(f"theta: {q[2]}")
+        print(f"theta_2: {q[3]}")
+        print(f"theta_3: {q[4]}")
+        print("==== Pose ==== ")
+
+        return q
 
     def setJointVelocity(self, v: [float]):
         l, h = -10000, 10000
@@ -58,14 +139,14 @@ class Robot:
         return m
 
     def wTe(self, q: np.ndarray) -> np.ndarray:
-        t11 = np.cos(q[2])*np.cos(q[4]+q[5])
-        t21 = np.sin(q[2])*np.cos(q[4]+q[5])
-        t31 = np.sin(q[4]+q[5])
+        t11 = np.cos(q[2])*np.cos(q[3] + q[4])
+        t21 = np.sin(q[2])*np.cos(q[3] + q[4])
+        t31 = np.sin(q[3] + q[4])
         t41 = 0
 
-        t12 = -np.cos(q[2])*np.sin(q[4]+q[5])
-        t22 = -np.sin(q[2])*np.sin(q[4]+q[5])
-        t32 = np.cos(q[4]+q[5])
+        t12 = -np.cos(q[2])*np.sin(q[3] + q[4])
+        t22 = -np.sin(q[2])*np.sin(q[3] + q[4])
+        t32 = np.cos(q[3] + q[4])
         t42 = 0
 
         t13 = -np.sin(q[2])
@@ -73,9 +154,9 @@ class Robot:
         t33 = 0
         t43 = 0
 
-        t14 = q[0] + x_t*np.cos(q[2]) - y_t*np.sin(q[2]) + np.cos(q[2])*(a[1]*np.cos(q[4]) + a[2]*np.cos(q[4]+q[5]))
-        t24 = q[1] + x_t*np.sin(q[2]) + y_t*np.cos(q[2]) + np.sin(q[2])*(a[1]*np.cos(q[4]) + a[2]*np.cos(q[4]+q[5]))
-        t34 = z_t + d[0] + a[1]*np.sin(q[4]) + a[2]*np.sin(q[4]+q[5])
+        t14 = q[0] + x_t*np.cos(q[2]) - y_t*np.sin(q[2]) + np.cos(q[2])*(a[1]*np.cos(q[3]) + a[2]*np.cos(q[3] + q[4]))
+        t24 = q[1] + x_t*np.sin(q[2]) + y_t*np.cos(q[2]) + np.sin(q[2])*(a[1]*np.cos(q[3]) + a[2]*np.cos(q[3] + q[4]))
+        t34 = z_t + d[0] + a[1]*np.sin(q[3]) + a[2]*np.sin(q[3]+q[4])
         t44 = 1
 
         wte = np.array([[t11, t12, t13, t14],
@@ -88,55 +169,51 @@ class Robot:
         t11, t21, t31 = 1, 0, 0
         t12, t22, t32 = 0, 1, 0
 
-        t13 = -x_t*np.sin(q[2]) - y_t*np.cos(q[2]) - np.sin(q[2])*(a[1]*np.cos(q[4])+a[2]*np.cos(q[4]+q[5]))
-        t23 = x_t*np.cos(q[2]) - y_t*np.sin(q[2]) + np.cos(q[2])*(a[1]*np.cos(q[4])+a[2]*np.cos(q[4]+q[5]))
+        t13 = -x_t*np.sin(q[2]) - y_t*np.cos(q[2]) - np.sin(q[2])*(a[1]*np.cos(q[3])+a[2]*np.cos(q[3]+q[4]))
+        t23 = x_t*np.cos(q[2]) - y_t*np.sin(q[2]) + np.cos(q[2])*(a[1]*np.cos(q[3])+a[2]*np.cos(q[3]+q[4]))
         t33 = 0
 
-        t14, t24, t34 = 0, 0, 0
+        t14 = -a[1]*np.cos(q[2])*np.sin(q[3]) - a[2]*np.cos(q[2])*np.sin(q[3]+q[4])
+        t24 = -a[1]*np.sin(q[2])*np.sin(q[3]) - a[2]*np.sin(q[2])*np.sin(q[3]+q[4])
+        t34 = a[1]*np.cos(q[3]) + a[2]*np.cos(q[3]+q[4])
 
-        t15 = -a[1]*np.cos(q[2])*np.sin(q[4]) - a[2]*np.cos(q[2])*np.sin(q[4]+q[5])
-        t25 = -a[1]*np.sin(q[2])*np.sin(q[4]) - a[2]*np.sin(q[2])*np.sin(q[4]+q[5])
-        t35 = a[1]*np.cos(q[4]) + a[2]*np.cos(q[4]+q[5])
+        t15 = -a[2]*np.cos(q[2])*np.sin(q[3]+q[4])
+        t25 = -a[2]*np.sin(q[2])*np.sin(q[3]+q[4])
+        t35 = a[2]*np.cos(q[3]+q[4])
 
-        t16 = -a[2]*np.cos(q[2])*np.sin(q[4]+q[5])
-        t26 = -a[2]*np.sin(q[2])*np.sin(q[4]+q[5])
-        t36 = a[2]*np.cos(q[4]+q[5])
-
-        jacob = np.array([[t11, t12, t13, t14, t15, t16],
-                          [t21, t22, t23, t24, t25, t26],
-                          [t31, t32, t33, t34, t35, t36]], dtype=np.float64)
+        jacob = np.array([[t11, t12, t13, t14, t15],
+                          [t21, t22, t23, t24, t25],
+                          [t31, t32, t33, t34, t35]], dtype=np.float64)
         return jacob
 
-    def disconnect(self):
-        self.sock.close()
-        print("Robot disconnected")
+    def go2(self, t: float, n: int, q: np.ndarray((5,), dtype=np.float64),
+            k: np.ndarray((3, 3), dtype=np.float64),
+            x_d: np.ndarray((3,), dtype=np.float64)):
+        q_dot = np.array([0, 0, 0, 0, 0], dtype=np.float64)
 
-    def go2(self, t: float, s: int, n: int, q: [np.float64],
-            k: [np.float64], x_d: [np.float64]):
-        q_dot = np.array([0, 0, 0, 0, 0, 0], dtype=np.float64)
+        try:
+            with open("./data/last_time.dat", 'r') as file:
+                last = np.float64(file.readline())
+            file.close()
 
-        q_plot = np.zeros((3, n))
-        qd_plot = np.zeros((3, n))
-        xd_plot = np.zeros((3, n))
-        e_plot = np.zeros((3, n))
-        v_plot = np.zeros((3, n))
-        t_plot = np.arange(0, s, t)
+        except Exception:
+            last = 0
 
         i = 0
         while i < n:
             try:
                 e = x_d - q[:3]
-                e_plot[:, i] = e
+                self.e_plot.write(f"{last + (i*t)},{e[0]},{e[1]},{e[2]},0,0,0\n")
                 if np.abs(np.mean(e)) < 1e-4:
                     break
 
-                q_plot[:, i] = q[:3]
-                qd_plot[:, i] = q_dot[:3]
-                xd_plot[:, i] = x_d
+                self.q_plot.write(f"{last + (i*t)},{q[0]},{q[1]},{q[2]},{q[3]},{q[4]}\n")
+                self.qd_plot.write(f"{last + (i*t)},{q_dot[0]},{q_dot[1]},{q_dot[2]},{q_dot[3]},{q_dot[4]}\n")
+                self.xd_plot.write(f"{last + (i*t)},{x_d[0]},{x_d[1]},{x_d[2]},0,0,0\n")
 
                 m = self.matrix(q)
                 v = np.matmul(m, np.matmul(k, e))
-                v_plot[:, i] = v
+                self.v_plot.write(f"{last + (i*t)},{v[0]},{v[1]},{v[2]}\n")
 
                 q_dot[:3] = np.matmul(np.linalg.inv(m), v)
                 q[:3] = q[:3] + q_dot[:3].ravel()*t
@@ -146,20 +223,26 @@ class Robot:
             except KeyboardInterrupt:
                 break
 
-        self.showGraphics(q, q_plot, qd_plot, xd_plot, e_plot,
-                          v_plot, t_plot)
+        with open("./data/last_time.dat", 'w') as file:
+            file.write(f"{last + (i*t)}")
+        file.close()
 
-    def followTrajectory(self, t: float, s: int, n: int, q: [np.float64],
-                         k: [np.float64], x_d: [np.float64],
+        return q
+
+    def followTrajectory(self, t: float, n: int,
+                         q: np.ndarray((5,), dtype=np.float64),
+                         k: np.ndarray((3, 3), dtype=np.float64),
+                         x_d: np.ndarray((3,), dtype=np.float64),
                          loop: bool = False):
-        q_dot = np.array([0, 0, 0, 0, 0, 0], dtype=np.float64)
+        q_dot = np.array([0, 0, 0, 0, 0], dtype=np.float64)
 
-        q_plot = np.zeros((3, n))
-        qd_plot = np.zeros((3, n))
-        xd_plot = np.zeros((3, n))
-        e_plot = np.zeros((3, n))
-        v_plot = np.zeros((3, n))
-        t_plot = np.arange(0, s, t)
+        try:
+            with open("./data/last_time.dat", 'r') as file:
+                last = np.float64(file.readline())
+            file.close()
+
+        except Exception:
+            last = 0
 
         length = x_d.shape[1]
 
@@ -168,7 +251,7 @@ class Robot:
         while i < n:
             try:
                 e = x_d[:, j] - q[:3]
-                e_plot[:, i] = e
+                self.e_plot.write(f"{last + (i*t)},{e[0]},{e[1]},{e[2]},0,0,0\n")
                 if np.abs(np.mean(e)) < 1e-4:
                     j += 1
                     if j == length and not loop:
@@ -176,13 +259,13 @@ class Robot:
                     elif j == length and loop:
                         j = j % length
 
-                q_plot[:, i] = q[:3]
-                qd_plot[:, i] = q_dot[:3]
-                xd_plot[:, i] = x_d[:, j]
+                self.q_plot.write(f"{last + (i*t)},{q[0]},{q[1]},{q[2]},{q[3]},{q[4]}\n")
+                self.qd_plot.write(f"{last + (i*t)},{q_dot[0]},{q_dot[1]},{q_dot[2]},{q_dot[3]},{q_dot[4]}\n")
+                self.xd_plot.write(f"{last + (i*t)},{x_d[0, j]},{x_d[1, j]},{x_d[2, j]},0,0,0\n")
 
                 m = self.matrix(q)
                 v = np.matmul(m, np.matmul(k, e))
-                v_plot[:, i] = v
+                self.v_plot.write(f"{last + (i*t)},{v[0]},{v[1]},{v[2]}\n")
 
                 q_dot[:3] = np.matmul(np.linalg.inv(m), v)
                 q[:3] = q[:3] + q_dot[:3].ravel()*t
@@ -192,68 +275,56 @@ class Robot:
             except KeyboardInterrupt:
                 break
 
-        self.showGraphics(q, q_plot, qd_plot, xd_plot, e_plot, v_plot, t_plot)
+        with open("./data/last_time.dat", 'w') as file:
+            file.write(f"{last + (i*t)}")
+        file.close()
 
-    def showGraphics(self, q: [np.float64],
-                     q_plot: [np.float64],
-                     qd_plot: [np.float64],
-                     xd_plot: [np.float64],
-                     e_plot: [np.float64],
-                     v_plot: [np.float64],
-                     t_plot: [np.float64]):
-        plt.figure(1)
-        dibujarMovil(L, q, p_b, a, d)
-        plt.plot(q_plot[0, :], q_plot[1, :], 'y-', linewidth=2)
+        return q
 
-        plt.figure(2)
-        plt.grid()
+    def ee2(self, t: float, n: int,
+            q: np.ndarray((5,), dtype=np.float64),
+            k: np.ndarray((3, 3), dtype=np.float64),
+            x_d: np.ndarray((3,), dtype=np.float64)):
+        q_dot = np.array([0, 0, 0, 0, 0])
 
-        plt.plot(t_plot, q_plot[0, :], '-', linewidth=2)
-        plt.plot(t_plot, q_plot[1, :], '-', linewidth=2)
-        plt.plot(t_plot, q_plot[2, :], '-', linewidth=2)
-        plt.plot(t_plot, xd_plot[0, :], '-', linewidth=2)
-        plt.plot(t_plot, xd_plot[1, :], '-', linewidth=2)
-        plt.plot(t_plot, xd_plot[2, :], '-', linewidth=2)
+        try:
+            with open("./data/last_time.dat", 'r') as file:
+                last = np.float64(file.readline())
+            file.close()
 
-        plt.title("Trajectory", fontsize=20)
-        plt.xlabel('t', fontsize=15)
-        plt.ylabel('q', fontsize=15)
-        plt.legend(['x', 'y', '$\\theta$', '$x_d$', '$y_d$', '$\\theta_d$'])
+        except Exception:
+            last = 0
 
-        plt.figure(3)
-        plt.grid()
+        i = 0
+        while i < n:
+            try:
+                x_i = self.wTe(q)[:3, 3]
+                self.x_plot.write(f"{last + (i*t)},{x_i[0]},{x_i[1]},{x_i[2]}\n")
 
-        plt.plot(t_plot, qd_plot[0, :], '-', linewidth=2)
-        plt.plot(t_plot, qd_plot[1, :], '-', linewidth=2)
-        plt.plot(t_plot, qd_plot[2, :], '-', linewidth=2)
+                e = x_d - x_i
+                self.e_plot.write(f"{last + (i*t)},0,0,0,{e[0]},{e[1]},{e[2]}\n")
 
-        plt.title("Control", fontsize=20)
-        plt.xlabel('t', fontsize=15)
-        plt.ylabel('$\\dot{q}$', fontsize=15)
-        plt.legend(['x', 'y', '$\\theta$'])
+                self.q_plot.write(f"{last + (i*t)},{q[0]},{q[1]},{q[2]},{q[3]},{q[4]}\n")
+                self.qd_plot.write(f"{last + (i*t)},{q_dot[0]},{q_dot[1]},{q_dot[2]},{q_dot[3]},{q_dot[4]}\n")
+                self.xd_plot.write(f"{last + (i*t)},0,0,0,{x_d[0]},{x_d[1]},{x_d[2]}\n")
 
-        plt.figure(4)
-        plt.grid()
+                v = np.matmul(self.matrix(q), q_dot[:3])
+                self.v_plot.write(f"{last + (i*t)},{v[0]},{v[1]},{v[2]}\n")
 
-        plt.plot(t_plot, e_plot[0, :], '-', linewidth=2)
-        plt.plot(t_plot, e_plot[1, :], '-', linewidth=2)
-        plt.plot(t_plot, e_plot[2, :], '-', linewidth=2)
+                if np.abs(np.mean(e)) < 1e-4:
+                    break
 
-        plt.title("Error", fontsize=20)
-        plt.xlabel('t', fontsize=15)
-        plt.ylabel('e', fontsize=15)
-        plt.legend(['$e_x$', '$e_y$', '$e_\\theta$'])
+                j = np.linalg.pinv(self.j_v(q))
+                q_dot = np.matmul(j, np.matmul(k, e))
+                q = q + q_dot*t
 
-        plt.figure(5)
-        plt.grid()
+                i += 1
 
-        plt.plot(t_plot, v_plot[0, :], '-', linewidth=2)
-        plt.plot(t_plot, v_plot[1, :], '-', linewidth=2)
-        plt.plot(t_plot, v_plot[2, :], '-', linewidth=2)
+            except KeyboardInterrupt:
+                break
 
-        plt.title("Velocities", fontsize=20)
-        plt.xlabel('t', fontsize=15)
-        plt.ylabel('v', fontsize=15)
-        plt.legend(['0', '1', '2'])
+        with open("./data/last_time.dat", 'w') as file:
+            file.write(f"{last + (i*t)}")
+        file.close()
 
-        plt.show()
+        return q

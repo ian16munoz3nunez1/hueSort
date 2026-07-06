@@ -1,12 +1,9 @@
-#!python3
-
-# Ian Mu;oz Nu;ez - Omnidireccional de 3 ruedas
-
 import numpy as np
 import matplotlib.pyplot as plt
 
 
-def dibujarMovil(L, q: [float], p_b: [float], a: [float], d: [float]):
+def dibujarMovil(L, q: [float], p_b: [float], a: [float], d: [float],
+                 x_plot: np.ndarray = None):
     x = q[0]
     y = q[1]
     theta = q[2]
@@ -16,7 +13,7 @@ def dibujarMovil(L, q: [float], p_b: [float], a: [float], d: [float]):
     ax = plt.axes(projection='3d')
     ax.axis('equal')
     ax.grid(True)
-    lim = 0.3
+    lim = 0.8
     ax.set_xlim([-lim, lim])
     ax.set_ylim([-lim, lim])
     ax.set_zlim([-lim, lim])
@@ -56,11 +53,6 @@ def dibujarMovil(L, q: [float], p_b: [float], a: [float], d: [float]):
     cy = y + (L-Lo)*np.sin(phi)
     ax.plot(cx, cy, 'c', linewidth=4)
 
-    # pc = np.dot(r_z1, np.array([L*0.4, 0, 1]).reshape(-1, 1))
-    # cx = pc[0] + L*0.15*np.cos(phi)
-    # cy = pc[1] + L*0.15*np.sin(phi)
-    # ax.plot(cx, cy, 'r', linewidth=4)
-
     # Ruedas
     p1 = np.dot(w1, np.array([+Lo, -lo, 1]).reshape(-1, 1))
     p2 = np.dot(w1, np.array([-Lo, -lo, 1]).reshape(-1, 1))
@@ -96,21 +88,21 @@ def dibujarMovil(L, q: [float], p_b: [float], a: [float], d: [float]):
                     [0, 0, 0, 1]], dtype=np.float64)
     ax.plot3D(wt1[0, 3], wt1[1, 3], wt1[2, 3], 'ko')
 
-    wt2 = np.array([[np.cos(theta)*np.cos(q[4]), -np.cos(theta)*np.sin(q[4]), -np.sin(theta), x + x_t*np.cos(theta) - y_t*np.sin(theta) + a[1]*np.cos(theta)*np.cos(q[4])],
-                    [np.sin(theta)*np.cos(q[4]), -np.sin(theta)*np.sin(q[4]), np.cos(theta), y + x_t*np.sin(theta) + y_t*np.cos(theta) + a[1]*np.sin(theta)*np.cos(q[4])],
-                    [np.sin(q[4]), np.cos(q[4]), 0, z_t + d[0] + a[1]*np.sin(q[4])],
+    wt2 = np.array([[np.cos(theta)*np.cos(q[3]), -np.cos(theta)*np.sin(q[3]), -np.sin(theta), x + x_t*np.cos(theta) - y_t*np.sin(theta) + a[1]*np.cos(theta)*np.cos(q[3])],
+                    [np.sin(theta)*np.cos(q[3]), -np.sin(theta)*np.sin(q[3]), np.cos(theta), y + x_t*np.sin(theta) + y_t*np.cos(theta) + a[1]*np.sin(theta)*np.cos(q[3])],
+                    [np.sin(q[3]), np.cos(q[3]), 0, z_t + d[0] + a[1]*np.sin(q[3])],
                     [0, 0, 0, 1]], dtype=np.float64)
     ax.plot3D(wt2[0, 3], wt2[1, 3], wt2[2, 3], 'ko')
     ax.plot3D([wt1[0, 3], wt2[0, 3]], [wt1[1, 3], wt2[1, 3]], [wt1[2, 3], wt2[2, 3]], 'k-', linewidth=2)
 
-    t11 = np.cos(q[2])*np.cos(q[4]+q[5])
-    t21 = np.sin(q[2])*np.cos(q[4]+q[5])
-    t31 = np.sin(q[4]+q[5])
+    t11 = np.cos(q[2])*np.cos(q[3]+q[4])
+    t21 = np.sin(q[2])*np.cos(q[3]+q[4])
+    t31 = np.sin(q[3]+q[4])
     t41 = 0
 
-    t12 = -np.cos(q[2])*np.sin(q[4]+q[5])
-    t22 = -np.sin(q[2])*np.sin(q[4]+q[5])
-    t32 = np.cos(q[4]+q[5])
+    t12 = -np.cos(q[2])*np.sin(q[3]+q[4])
+    t22 = -np.sin(q[2])*np.sin(q[3]+q[4])
+    t32 = np.cos(q[3]+q[4])
     t42 = 0
 
     t13 = -np.sin(q[2])
@@ -118,9 +110,9 @@ def dibujarMovil(L, q: [float], p_b: [float], a: [float], d: [float]):
     t33 = 0
     t43 = 0
 
-    t14 = x + x_t*np.cos(q[2]) - y_t*np.sin(q[2]) + np.cos(q[2])*(a[1]*np.cos(q[4]) + a[2]*np.cos(q[4]+q[5]))
-    t24 = y + x_t*np.sin(q[2]) + y_t*np.cos(q[2]) + np.sin(q[2])*(a[1]*np.cos(q[4]) + a[2]*np.cos(q[4]+q[5]))
-    t34 = z_t + d[0] + a[1]*np.sin(q[4]) + a[2]*np.sin(q[4]+q[5])
+    t14 = x + x_t*np.cos(q[2]) - y_t*np.sin(q[2]) + np.cos(q[2])*(a[1]*np.cos(q[3]) + a[2]*np.cos(q[3]+q[4]))
+    t24 = y + x_t*np.sin(q[2]) + y_t*np.cos(q[2]) + np.sin(q[2])*(a[1]*np.cos(q[3]) + a[2]*np.cos(q[3]+q[4]))
+    t34 = z_t + d[0] + a[1]*np.sin(q[3]) + a[2]*np.sin(q[3]+q[4])
     t44 = 1
 
     wte = np.array([[t11, t12, t13, t14],
@@ -128,3 +120,6 @@ def dibujarMovil(L, q: [float], p_b: [float], a: [float], d: [float]):
                     [t31, t32, t33, t34],
                     [t41, t42, t43, t44]], dtype=np.float64)
     ax.plot3D([wt2[0, 3], wte[0, 3]], [wt2[1, 3], wte[1, 3]], [wt2[2, 3], wte[2, 3]], 'k-', linewidth=2)
+
+    if x_plot is not None:
+        ax.plot3D(x_plot[0, 1:], x_plot[1, 1:], x_plot[2, 1:], 'y-', linewidth=2)

@@ -1,0 +1,4 @@
+#!/bin/bash
+
+nc -l 9999&
+python3 main.py
