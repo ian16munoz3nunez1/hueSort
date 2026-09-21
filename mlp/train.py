@@ -2,12 +2,13 @@
 
 import numpy as np
 import pandas as pd
+import pickle
 import matplotlib.pyplot as plt
 from matplotlib import colormaps
 from mlp import MLP
 pi = np.pi
 
-df = pd.read_csv('color.csv')
+df = pd.read_csv('tcs230/color.csv')
 r = np.array([df['r']])
 g = np.array([df['g']])
 b = np.array([df['b']])
@@ -50,3 +51,6 @@ plt.ylabel('Error', fontsize=15)
 
 plt.show()
 
+with open('mlp.sav', 'wb') as file:
+    pickle.dump(nn, file)
+file.close()
