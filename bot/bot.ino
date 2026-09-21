@@ -25,7 +25,7 @@ void setup()
   WiFi.begin(ssid, password);
   led0.blink(2, 200);
 
-  while(WiFi.status() != WL_CONNECTED) { delay(1000); }
+  while(WiFi.status() != WL_CONNECTED) { led0.blink(1, 2000); }
   led0.blink(3, 200);
 
   // Serial.begin(115200);
