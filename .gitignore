@@ -7,3 +7,5 @@ doc/*.out
 doc/*.pdf
 puenteH/fp-info-cache
 puenteH/puenteH.kicad_prl
+puenteH/puenteH-backups/
+bot/data/
